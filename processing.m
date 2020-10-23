@@ -137,3 +137,5 @@ legend("A","B","C","D","E","F","G","H")
 xlabel("Time (s)")
 ylabel("Current Intensity (A)")
 
+# display the graphics
+plt.show()
