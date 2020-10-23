@@ -8,6 +8,7 @@
 import os
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 from time import gmtime, sleep, strftime, time
 
 # pull in the daqhat library
@@ -43,29 +44,34 @@ class PretestDataLogger:
         self.running = False
 
 
-    def log(self, testVal):
+    def log(self):
         '''
         In a loop (until interrupted) scan the inputs of all detected boards
         and output data to a tab delimited text file with a single header row
         '''
 
-        # get one line of voltage data
-        testVal = np.zeros((1, 64))
+        # get desired number of lines of voltage data
+        num_lines = 5
+        testVal = np.zeros((num_lines, 64))
+        # intialize counter, index, and running boolean
         idx = 0
         tmpCounter = 0
         self.running = True
         while self.running:
             # Read and display every channel
-            #for entry in self.boards:
+            # for entry in self.boards:
             for board in self.boardsEntry:
                 for channel in range(board.info().NUM_AI_CHANNELS):
-                    testVal[0,idx] = "%.4f" % board.a_in_read(channel)
+                    testVal[tmpCounter,idx] = "%.4f" % board.a_in_read(channel)
                     idx += 1
         
             sleep(0.5)
+            # iterate counter
             tmpCounter += 1
-            # break condition
-            if tmpCounter == 1:
+            # reset index
+            idx = 0
+            # break condition based on number of lines
+            if tmpCounter == num_lines:
                 self.running = False
         return testVal
 
@@ -77,23 +83,18 @@ if __name__ == "__main__":
 
    # Create Data Logger
     logger = PretestDataLogger()
+    
+    
 
     # empty input matrix
-    testVal = []
+    # testVal = []
 
     # Add signal handler so systemd can shutdown service
     signal.signal(signal.SIGINT, logger.handle_interupt)
     signal.signal(signal.SIGTERM, logger.handle_interupt)
 
-    logger.log(testVal)
-
-    m = val.shape[0]
-
-
-    # Impulse response of the filter
-    IR = np.ones((5,)) / 5
-
-
+    val = logger.log()
+    
     # ORDER: V4 V3 V5 V1 V6 V0 V7 V2; therefore, we use the following
     # assignments to simplify things
     V0 = 5; V1 = 3; V2 = 7; V3 = 1; V4 = 0; V5 = 2; V6 = 4; V7 = 6
@@ -170,5 +171,31 @@ if __name__ == "__main__":
     h6 = val[:,V2+56]-val[:,V1+56]
     h_I = (val[:,V1+56]-val[:,V0+56])/ 0.1
 
-    if a1 >= 5:
+    # get avg voltage values
+    a1_avg = np.average(a1)
+    
+    if a1_avg >= 1:
         print("alpha 1 battery high")
+    
+    # create a figure and an axis
+    fig = plt.figure(1); ax = plt.subplot(111)
+    # plot the Alpha voltages against time
+    ax.plot(t,a1,label='A1 Batt',linewidth=0.5)
+    ax.plot(t,a2, label='A2 Batt',linewidth=0.5)
+    ax.plot(t,a3, label='A3 Batt',linewidth=0.5)
+    ax.plot(t,a4, label='A4 Batt',linewidth=0.5)
+    ax.plot(t,a5, label='A5 Batt',linewidth=0.5)
+    ax.plot(t,a6, label='A6 Batt',linewidth=0.5)
+    # define the limits on the shown data range
+    ax.autoscale_view()
+    # switch on grid lines
+    ax.grid(True)
+    # create a legend
+    ax.legend(loc='upper right',framealpha=1)
+    # label the axis
+    ax.set_title('Real-time battery voltages for Alpha Arm')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Voltage (V)')
+    
+    #display the graphics
+    plt.show()
