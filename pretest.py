@@ -85,90 +85,116 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, logger.handle_interupt)
     signal.signal(signal.SIGTERM, logger.handle_interupt)
 
-    logger.log(testVal)
-
+    # extract voltages
+    val = logger.log()
+    # get shape of voltages
     m = val.shape[0]
 
 
     # Impulse response of the filter
     IR = np.ones((5,)) / 5
 
+    # voltage order vector
+    volt_ord = [5,3,7,1,0,2,4,6]
 
-    # ORDER: V4 V3 V5 V1 V6 V0 V7 V2; therefore, we use the following
-    # assignments to simplify things
-    V0 = 5; V1 = 3; V2 = 7; V3 = 1; V4 = 0; V5 = 2; V6 = 4; V7 = 6
+    # Voltages for 1st arm read (1st arm being Alpha) in matrix form
+    # initialize matricies for each arm
+    alpha = np.zeros((7,m))
+    beta = np.zeros((7,m))
+    charlie = np.zeros((7,m))
+    delta = np.zeros((7,m))
+    echo = np.zeros((7,m))
+    foxtrot = np.zeros((7,m))
+    golf = np.zeros((7,m))
+    hotel = np.zeros((7,m))
 
-    # Voltages for 1st arm read (1st arm being Alpha)
-    a1 = val[:,V7]-val[:,V6] # A1's voltage is: V7-V6
-    a2 = val[:,V6]-val[:,V5] # A2's voltage is: V6-V5
-    a3 = val[:,V5]-val[:,V4] # A3's voltage is: V5-V4
-    a4 = val[:,V4]-val[:,V3] # A4's voltage is: V4-V3
-    a5 = val[:,V3]-val[:,V2] # A5's voltage is: V3-V2
-    a6 = val[:,V2]-val[:,V1] # A6's voltage is: V2-V1
-    a_I = (val[:,V1]-val[:,V0])/ 0.1 # (i.e; V = ir so i = V/R) where the shunt resistor = 0.1 Ohm
+    # add voltages to each row
+    for i in range(alpha.shape[0]):
+        alpha[i] = val[:,volt_ord[7-i]]-val[:,volt_ord[6-i]]
+        beta[i] = val[:,volt_ord[7-i]+8]-val[:,volt_ord[6-i]+8]
+        charlie[i] = val[:,volt_ord[7-i]+16]-val[:,volt_ord[6-i]+16]
+        delta[i] = val[:,volt_ord[7-i]+24]-val[:,volt_ord[6-i]+24]
+        echo[i] = val[:,volt_ord[7-i]+32]-val[:,volt_ord[6-i]+32]
+        foxtrot[i] = val[:,volt_ord[7-i]+40]-val[:,volt_ord[6-i]+40]
+        golf[i] = val[:,volt_ord[7-i]+48]-val[:,volt_ord[6-i]+48]
+        hotel[i] = val[:,volt_ord[7-i]+56]-val[:,volt_ord[6-i]+56]
 
-    # Voltages for 2nd arm being Bravo Arm
-    b1 = val[:,V7+8]-val[:,V6+8]
-    b2 = val[:,V6+8]-val[:,V5+8]
-    b3 = val[:,V5+8]-val[:,V4+8]
-    b4 = val[:,V4+8]-val[:,V3+8]
-    b5 = val[:,V3+8]-val[:,V2+8]
-    b6 = val[:,V2+8]-val[:,V1+8]
-    b_I = (val[:,V1+8]-val[:,V0+8])/ 0.1
+        # make the current (I) row
+        if i == 6:
+            alpha[i] = (val[:,volt_ord[7-i]]-val[:,volt_ord[6-i]]) / 0.1
+            beta[i] = (val[:,volt_ord[7-i]+8]-val[:,volt_ord[6-i]+8]) / 0.1
+            charlie[i] = (val[:,volt_ord[7-i]+16]-val[:,volt_ord[6-i]+16]) / 0.1
+            delta[i] = (val[:,volt_ord[7-i]+24]-val[:,volt_ord[6-i]+24]) / 0.1
+            echo[i] = (val[:,volt_ord[7-i]+32]-val[:,volt_ord[6-i]+32]) / 0.1
+            foxtrot[i] = (val[:,volt_ord[7-i]+40]-val[:,volt_ord[6-i]+40]) / 0.1
+            golf[i] = (val[:,volt_ord[7-i]+48]-val[:,volt_ord[6-i]+48]) / 0.1
+            hotel[i] = (val[:,volt_ord[7-i]+56]-val[:,volt_ord[6-i]+56]) / 0.1
 
-    # Voltages for 3rd arm being Charlie Arm
-    c1 = val[:,V7+16]-val[:,V6+16]
-    c2 = val[:,V6+16]-val[:,V5+16]
-    c3 = val[:,V5+16]-val[:,V4+16]
-    c4 = val[:,V4+16]-val[:,V3+16]
-    c5 = val[:,V3+16]-val[:,V2+16]
-    c6 = val[:,V2+16]-val[:,V1+16]
-    c_I = (val[:,V1+16]-val[:,V0+16])/ 0.1
 
-    # Voltages for 4th arm being Delta Arm
-    d1 = val[:,V7+24]-val[:,V6+24]
-    d2 = val[:,V6+24]-val[:,V5+24]
-    d3 = val[:,V5+24]-val[:,V4+24]
-    d4 = val[:,V4+24]-val[:,V3+24]
-    d5 = val[:,V3+24]-val[:,V2+24]
-    d6 = val[:,V2+24]-val[:,V1+24]
-    d_I = (val[:,V1+24]-val[:,V0+24])/ 0.1
+    # Convolving the sample for every battery to apply the average running filter
+    # Also truncating the convolved series to match the battery series
+    for i in range(alpha.shape[0]):
+        alpha[i] = np.convolve(alpha[i],IR)[:m]
+        beta[i] = np.convolve(beta[i],IR)[:m]
+        charlie[i] = np.convolve(charlie[i],IR)[:m]
+        delta[i] = np.convolve(delta[i],IR)[:m]
+        echo[i] = np.convolve(echo[i],IR)[:m]
+        foxtrot[i] = np.convolve(foxtrot[i],IR)[:m]
+        golf[i] = np.convolve(golf[i],IR)[:m]
+        hotel[i] = np.convolve(hotel[i],IR)[:m]
 
-    # Voltages for 5th arm being Echo Arm
-    e1 = val[:,V7+32]-val[:,V6+32]
-    e2 = val[:,V6+32]-val[:,V5+32]
-    e3 = val[:,V5+32]-val[:,V4+32]
-    e4 = val[:,V4+32]-val[:,V3+32]
-    e5 = val[:,V3+32]-val[:,V2+32]
-    e6 = val[:,V2+32]-val[:,V1+32]
-    e_I = (val[:,V1+32]-val[:,V0+32])/ 0.1
 
-    # Voltages for 6th arm being Foxtrot Arm
-    f1 = val[:,V7+40]-val[:,V6+40]
-    f2 = val[:,V6+40]-val[:,V5+40]
-    f3 = val[:,V5+40]-val[:,V4+40]
-    f4 = val[:,V4+40]-val[:,V3+40]
-    f5 = val[:,V3+40]-val[:,V2+40]
-    f6 = val[:,V2+40]-val[:,V1+40]
-    f_I = (val[:,V1+40]-val[:,V0+40])/ 0.1
+    # sample for 20 - 30 seconds
+    # then take the average of those samples for each battery
 
-    # Voltages for 6th arm being Golf Arm
-    g1 = val[:,V7+48]-val[:,V6+48]
-    g2 = val[:,V6+48]-val[:,V5+48]
-    g3 = val[:,V5+48]-val[:,V4+48]
-    g4 = val[:,V4+48]-val[:,V3+48]
-    g5 = val[:,V3+48]-val[:,V2+48]
-    g6 = val[:,V2+48]-val[:,V1+48]
-    g_I = (val[:,V1+48]-val[:,V0+48])/ 0.1
+    # make one array for all average voltages
+    battery_volt = np.concatenate((alpha[:,0], beta[:,0], charlie[:,0], delta[:,0], \
+        echo[:,0], foxtrot[:,0], golf[:,0], hotel[:,0]), axis=None)
 
-    # Voltages for 6th arm being Hotel Arm
-    h1 = val[:,V7+56]-val[:,V6+56]
-    h2 = val[:,V6+56]-val[:,V5+56]
-    h3 = val[:,V5+56]-val[:,V4+56]
-    h4 = val[:,V4+56]-val[:,V3+56]
-    h5 = val[:,V3+56]-val[:,V2+56]
-    h6 = val[:,V2+56]-val[:,V1+56]
-    h_I = (val[:,V1+56]-val[:,V0+56])/ 0.1
+    # ================= #
+    # DEAD BATTERY TEST #
+    # ================= #
 
-    if a1 >= 5:
-        print("alpha 1 battery high")
+    # ===================== #
+    # Reversed Battery Test #
+    # ===================== #
+
+    # find the mean of the battery voltages
+    mean = np.mean(battery_volt)
+
+    # find the standard deviation of the battery voltages
+    std = np.std(battery_volt,dtype=np.float64)
+
+    # ========================= #
+    # Battery Out of Range Test #
+    # ========================= #
+
+
+    # Battery out of range
+    for i in range(7):
+        # redefine based on average values
+        for j in range(1):
+            if alpha[i,j] not in range(mean - 3 * std, mean + 3 * std):
+                print("alpha", i + 1, "out of range")
+                alpha_clear = False
+            if beta[i,j] <= 0.1:
+                print("beta", i + 1, "battery low")
+                beta_clear = False
+            if charlie[i,j] <= 0.1:
+                print("charlie", i + 1, "battery low")
+                charlie_clear = False
+            if delta[i,j] <= 0.1:
+                print("delta", i + 1, "battery low")
+                delta_clear = False
+            if echo[i,j] <= 0.1:
+                print("echo", i + 1, "battery low")
+                echo_clear = False
+            if foxtrot[i,j] <= 0.1:
+                print("foxtrot", i + 1, "battery low")
+                foxtrot_clear = False
+            if golf[i,j] <= 0.1:
+                print("golf", i + 1, "battery low")
+                golf_clear = False
+            if hotel[i,j] <= 0.1:
+                print("hotel", i + 1, "battery low")
+                hotel_clear = False
