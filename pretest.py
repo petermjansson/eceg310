@@ -49,8 +49,10 @@ class PretestDataLogger:
         and output data to a tab delimited text file with a single header row
         '''
 
-        # get one line of voltage data
-        testVal = np.zeros((1, 64))
+        # get desired number of lines of voltage data
+        num_samples = 5
+        testVal = np.zeros((num_samples, 64))
+        # intialize counter, index, and running boolean
         idx = 0
         tmpCounter = 0
         self.running = True
