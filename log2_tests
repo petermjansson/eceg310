@@ -1,0 +1,52 @@
+
+# import modules
+import sys
+
+
+# ======= #
+# Pretest #
+# ======= #
+
+while True:
+    check1 = input("Begin Pretest Check? yes/no ")
+    if check1 == "yes":
+        # Pretest Code
+        print(pretest)
+        break
+    if check1 == "no":
+        check2 = input("Continue Experiment? yes/no ")
+        if check2 == "yes":
+            break
+        if check2 == "no":
+            sys.exit()
+
+
+
+# ========= #
+# Main Test #
+# ========= #
+
+while True:
+    check3 = input("Begin Main Experiment? yes/no ")
+    if check3 == "yes":
+        print('main experiment')
+        break
+    if check3 == "no":
+        sys.exit()
+
+# Main Test Code
+
+# ========= #
+# Post Test #
+# ========= #
+
+while True:
+    check4 = input("Begin Post Processing? yes/no ")
+    if check4 == "yes":
+        print("processing")
+        break
+    if check4 == "no":
+        sys.exit()
+
+
+# Post Test Code
